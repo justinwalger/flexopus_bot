@@ -1,0 +1,27 @@
+stages:
+  - check
+
+default:
+  image: python:3.13-slim
+  variables:
+    PRE_COMMIT_HOME: "$CI_PROJECT_DIR/.cache/pre-commit"
+    UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/pre-commit
+      - .cache/uv
+      - .venv
+
+check:
+  stage: check
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends curl git ca-certificates
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - export PATH="$HOME/.local/bin:$PATH"
+    - uv sync --locked
+  script:
+    - uv run pre-commit run --all-files --show-diff-on-failure check-yaml end-of-file-fixer trailing-whitespace ruff ruff-format
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'

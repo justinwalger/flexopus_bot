@@ -1,0 +1,34 @@
+[project]
+name = "flexopus-4-7"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]
+api = [
+    "fastapi>=0.139.0",
+    "langchain>=1.3.12",
+    "langchain-google-genai>=4.2.7",
+    "langchain-google-vertexai>=3.2.4",
+    "langchain-openai>=1.3.4",
+    "langchain-openrouter>=0.2.6",
+    "langgraph-checkpoint-postgres>=3.1.0",
+]
+ui = [
+    "htbuilder>=0.9.0",
+    "streamlit>=1.59.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "application", "llm", "ui"]
