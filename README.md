@@ -35,17 +35,38 @@ Required environment variables are loaded from `.env` in the project root:
 
 ## Running the App
 
+### Local Run
+
+Install the dependency groups first:
+
+```bash
+uv sync --locked --group api --group ui
+```
+
 Start the backend from `src/api`:
 
 ```bash
-fastapi dev main.py
+cd src/api
+uv run fastapi dev main.py
 ```
 
 Start the UI from `src/ui`:
 
 ```bash
-streamlit run app.py
+cd src/ui
+uv run streamlit run app.py
 ```
+
+### Docker Build and Run
+
+Start both services together with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+When using Docker Compose, the UI talks to the API service by name (`http://api:8000/api`), so no
+host override is needed.
 
 ## Tooling
 
@@ -81,3 +102,4 @@ When that happens, the UI shows the pending tool name and arguments, and you can
 - add eval
 - add tests
 - subagents etc
+- auth

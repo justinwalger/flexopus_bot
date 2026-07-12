@@ -26,7 +26,7 @@ def create_main_page():
 
     with title_row:
         st.title(
-            "Flexopus 4.7 - Dein Buchungsassitent",
+            "Flexopus Assistant",
             anchor=False,
             width="stretch",
         )
@@ -34,8 +34,8 @@ def create_main_page():
         st.session_state.messages = []
 
     # Ask for suggestions
-    selected_suggestion = st.pills(
-        label="Beispiele",
+    st.pills(
+        label="Schnelleinstiege",
         label_visibility="collapsed",
         options=SUGGESTIONS.keys(),
         key="selected_suggestion",
@@ -75,13 +75,13 @@ def create_main_page():
             st.session_state.messages = []
 
         st.button(
-            "Restart",
+            "Neues Gespräch",
             icon=":material/refresh:",
             on_click=clear_conversation,
         )
 
     # Flow for human input
-    if human_input := st.chat_input("Ask a question...", key="initial_question"):
+    if human_input := st.chat_input("Stelle eine Frage...", key="initial_question"):
         write_response("human", human_input)
         llm_generator = _connector.ask_backend(
             message=human_input, thread_id=st.session_state.thread_id
