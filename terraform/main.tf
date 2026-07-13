@@ -77,3 +77,9 @@ output "frontend_url" {
   description = "public frontend url"
   value       = google_cloud_run_v2_service.streamlit_frontend.uri
 }
+
+output "ci_deployer_key" {
+  description = "Base64-encoded SA key JSON. Decode with: terraform output -raw ci_deployer_key | base64 -d"
+  value       = google_service_account_key.ci_deployer_key.private_key
+  sensitive   = true
+}
