@@ -10,3 +10,9 @@ wheels/
 .venv
 .env
 .python-version
+
+terraform/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
