@@ -21,6 +21,7 @@ COPY src ./src
 
 WORKDIR /app/src/ui
 
-EXPOSE 8501
+ENV PORT=8080
+EXPOSE 8080
 
-CMD ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+CMD streamlit run app.py --server.address=0.0.0.0 --server.port=${PORT} --server.headless=true

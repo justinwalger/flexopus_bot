@@ -26,5 +26,36 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# import pages. curently only one page exists: main.py
-create_main_page()
+
+def _render_credentials_gate() -> None:
+    """Ask the user for the Flexopus and Gemini credentials once at the start
+    of the session, before any chat interaction is possible."""
+    st.title("Flexopus Assistant", anchor=False)
+    st.caption(
+        "Bitte gib deine Zugangsdaten ein, um eine neue Sitzung zu starten."
+    )
+
+    with st.form("credentials_form"):
+        flexopus_api_key = st.text_input("Flexopus API Key", type="password")
+        flexopus_url = st.text_input(
+            "Flexopus URL", placeholder="https://example.flexopus.com/api/v1"
+        )
+        gemini_api_key = st.text_input("Gemini API Key", type="password")
+        submitted = st.form_submit_button("Sitzung starten")
+
+    if submitted:
+        if not flexopus_api_key or not flexopus_url or not gemini_api_key:
+            st.error("Bitte fülle alle Felder aus.")
+            return
+
+        st.session_state.flexopus_api_key = flexopus_api_key
+        st.session_state.flexopus_url = flexopus_url
+        st.session_state.gemini_api_key = gemini_api_key
+        st.rerun()
+
+
+if "flexopus_api_key" not in st.session_state:
+    _render_credentials_gate()
+else:
+    # import pages. curently only one page exists: main.py
+    create_main_page()

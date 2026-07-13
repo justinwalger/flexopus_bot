@@ -52,6 +52,9 @@ def create_main_page():
             thread_id=st.session_state.thread_id,
             interrupt_id=resume_payload["interrupt_id"],
             decisions=resume_payload["decisions"],
+            flexopus_api_key=st.session_state.flexopus_api_key,
+            flexopus_url=st.session_state.flexopus_url,
+            gemini_api_key=st.session_state.gemini_api_key,
         )
         write_response("ai", llm_generator)
     else:
@@ -64,7 +67,11 @@ def create_main_page():
         st.session_state.pending_suggestion = None
         write_response("human", suggested_question)
         llm_generator = _connector.ask_backend(
-            message=suggested_question, thread_id=st.session_state.thread_id
+            message=suggested_question,
+            thread_id=st.session_state.thread_id,
+            flexopus_api_key=st.session_state.flexopus_api_key,
+            flexopus_url=st.session_state.flexopus_url,
+            gemini_api_key=st.session_state.gemini_api_key,
         )
         write_response("ai", llm_generator)
 
@@ -84,6 +91,10 @@ def create_main_page():
     if human_input := st.chat_input("Stelle eine Frage...", key="initial_question"):
         write_response("human", human_input)
         llm_generator = _connector.ask_backend(
-            message=human_input, thread_id=st.session_state.thread_id
+            message=human_input,
+            thread_id=st.session_state.thread_id,
+            flexopus_api_key=st.session_state.flexopus_api_key,
+            flexopus_url=st.session_state.flexopus_url,
+            gemini_api_key=st.session_state.gemini_api_key,
         )
         write_response("ai", llm_generator)

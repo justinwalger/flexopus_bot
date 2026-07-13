@@ -12,12 +12,25 @@ class BackendConnector:
             raise ValueError("BACKEND_API_URL is not configured.")
         self.timeout = timeout
 
-    def ask_backend(self, message: str, thread_id: str) -> Iterator[dict[str, str]]:
+    def ask_backend(
+        self,
+        message: str,
+        thread_id: str,
+        flexopus_api_key: str,
+        flexopus_url: str,
+        gemini_api_key: str,
+    ) -> Iterator[dict[str, str]]:
         try:
             with httpx.stream(
                 "POST",
                 f"{self.api_url}/chat",
-                json={"message": message, "thread_id": thread_id},
+                json={
+                    "message": message,
+                    "thread_id": thread_id,
+                    "flexopus_api_key": flexopus_api_key,
+                    "flexopus_url": flexopus_url,
+                    "gemini_api_key": gemini_api_key,
+                },
                 timeout=self.timeout,
             ) as response:
                 response.raise_for_status()
@@ -36,6 +49,9 @@ class BackendConnector:
         thread_id: str,
         interrupt_id: str,
         decisions: list[dict[str, str]],
+        flexopus_api_key: str,
+        flexopus_url: str,
+        gemini_api_key: str,
     ) -> Iterator[dict[str, str]]:
         try:
             with httpx.stream(
@@ -45,6 +61,9 @@ class BackendConnector:
                     "thread_id": thread_id,
                     "interrupt_id": interrupt_id,
                     "decisions": decisions,
+                    "flexopus_api_key": flexopus_api_key,
+                    "flexopus_url": flexopus_url,
+                    "gemini_api_key": gemini_api_key,
                 },
                 timeout=self.timeout,
             ) as response:

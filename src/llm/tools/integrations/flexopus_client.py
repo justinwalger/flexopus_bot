@@ -1,19 +1,35 @@
 """Flexopus HTTP client for authenticated GET and POST requests."""
 
 import os
+from contextvars import ContextVar
 from typing import Any
 
 import httpx
+
+# Holds the per-request Flexopus credentials collected from the user at the
+# start of a chat session, so tool calls issued within that request can reach
+# them without threading token/base_url through every tool function signature.
+_session_credentials: ContextVar[tuple[str, str] | None] = ContextVar(
+    "flexopus_session_credentials", default=None
+)
+
+
+def set_flexopus_credentials(token: str, base_url: str) -> None:
+    """Bind the Flexopus credentials to use for tool calls made in the current request."""
+    _session_credentials.set((token, base_url))
 
 
 class FlexopusClient:
     def __init__(
         self, token: str | None = None, base_url: str | None = None, timeout: float = 15.0
     ):
-        token = token or os.getenv("FLEXOPUS_API_TOKEN")
+        session = _session_credentials.get()
+        session_token, session_base_url = session if session else (None, None)
+
+        token = token or session_token or os.getenv("FLEXOPUS_API_TOKEN")
         if not token:
             raise ValueError("FLEXOPUS_API_TOKEN is not configured.")
-        self.base_url = base_url or os.getenv("FLEXOPUS_API_URL")
+        self.base_url = base_url or session_base_url or os.getenv("FLEXOPUS_API_URL")
         if not self.base_url:
             raise ValueError("FLEXOPUS_API_URL is not configured.")
         self.headers = {

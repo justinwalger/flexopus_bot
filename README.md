@@ -22,11 +22,13 @@ buildings, locations, bookables, bookings, and user records.
 
 The project uses Python 3.13.
 
-Required environment variables are loaded from `.env` in the project root:
+The UI now asks each user for their Flexopus API key, Flexopus URL, and Gemini API key at the start
+of the session, so those three no longer need to live in `.env`. Environment variables loaded from
+`.env` in the project root are now just local-dev fallbacks and tracing config:
 
-- `FLEXOPUS_API_TOKEN`
-- `FLEXOPUS_API_URL`
-- `GOOGLE_API_KEY`
+- `FLEXOPUS_API_TOKEN` (fallback if not supplied in the session form)
+- `FLEXOPUS_API_URL` (fallback if not supplied in the session form)
+- `GOOGLE_API_KEY` (fallback if not supplied in the session form)
 - `LANGSMITH_TRACING`
 - `LANGSMITH_ENDPOINT`
 - `LANGSMITH_API_KEY`
@@ -59,14 +61,47 @@ uv run streamlit run app.py
 
 ### Docker Build and Run
 
-Start both services together with Docker Compose:
+The API and UI are split into separate Compose files (`docker-compose.api.yml` and
+`docker-compose.ui.yml`) so each service can be built, run, and deployed independently. They
+communicate over a shared external Docker network, which needs to be created once:
 
 ```bash
-docker compose up --build
+docker network create flexopus-network
 ```
 
-When using Docker Compose, the UI talks to the API service by name (`http://api:8000/api`), so no
-host override is needed.
+Start the API:
+
+```bash
+docker compose -f docker-compose.api.yml up --build
+```
+
+Start the UI:
+
+```bash
+docker compose -f docker-compose.ui.yml up --build
+```
+
+Since both services join the shared `flexopus-network`, the UI can still reach the API by service
+name (`http://api:8080/api`), no host override needed. The API is published on host port `8000` and
+the UI on host port `8501`; both containers listen internally on `8080`.
+
+### Deploying to Cloud Run (GCP)
+
+`Dockerfile.api` and `Dockerfile.streamlit` each listen on `$PORT` (defaulting to `8080`), so they
+build and run as-is with `gcloud run deploy`, e.g.:
+
+```bash
+gcloud run deploy flexopus-api --source . --dockerfile Dockerfile.api
+gcloud run deploy flexopus-ui --source . --dockerfile Dockerfile.streamlit
+```
+
+Cloud Run doesn't share the Docker Compose network, so after the API service is deployed, set
+`BACKEND_API_URL` on the UI service to the API's actual Cloud Run URL:
+
+```bash
+gcloud run services update flexopus-ui \
+  --set-env-vars BACKEND_API_URL=https://flexopus-api-<hash>.a.run.app/api
+```
 
 ## Tooling
 

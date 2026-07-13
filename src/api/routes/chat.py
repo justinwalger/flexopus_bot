@@ -2,12 +2,11 @@
 
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from api.dependencies import get_chat_service
 from api.schemas.chat import ChatRequest, ChatResumeRequest
-from application.chat_service import ChatService
 
 router = APIRouter()
 
@@ -15,9 +14,16 @@ router = APIRouter()
 @router.post("/chat")
 async def stream_chat(
     request: ChatRequest,
-    service: ChatService = Depends(get_chat_service),
+    http_request: Request,
 ) -> StreamingResponse:
     """Main endpoint for streaming chat responses. It takes a ChatRequest containing the thread ID and message, and streams back the response from the chat service."""
+
+    service = get_chat_service(
+        checkpointer=http_request.app.state.checkpointer,
+        flexopus_api_key=request.flexopus_api_key,
+        flexopus_url=request.flexopus_url,
+        gemini_api_key=request.gemini_api_key,
+    )
 
     async def generate():
         async for chunk in service.answer(
@@ -35,9 +41,16 @@ async def stream_chat(
 @router.post("/chat/resume")
 async def resume_chat(
     request: ChatResumeRequest,
-    service: ChatService = Depends(get_chat_service),
+    http_request: Request,
 ) -> StreamingResponse:
     """Resumes a chat after a tool interrupt. It takes a ChatResumeRequest containing the thread ID, interrupt ID, and the decision made by the user, and streams back the response from the chat service."""
+
+    service = get_chat_service(
+        checkpointer=http_request.app.state.checkpointer,
+        flexopus_api_key=request.flexopus_api_key,
+        flexopus_url=request.flexopus_url,
+        gemini_api_key=request.gemini_api_key,
+    )
 
     async def generate():
         async for chunk in service.resume_tool(

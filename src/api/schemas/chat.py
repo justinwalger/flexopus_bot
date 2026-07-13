@@ -5,7 +5,15 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-class ChatRequest(BaseModel):
+class SessionCredentials(BaseModel):
+    """Credentials the user supplies at the start of a chat session."""
+
+    flexopus_api_key: str = Field(min_length=1)
+    flexopus_url: str = Field(min_length=1)
+    gemini_api_key: str = Field(min_length=1)
+
+
+class ChatRequest(SessionCredentials):
     """ChatRequest represents a request to the chat API, containing the thread ID and the message to be sent."""
 
     thread_id: str = Field(min_length=1)
@@ -21,7 +29,7 @@ class ToolDecision(BaseModel):
     message: str | None = None
 
 
-class ChatResumeRequest(BaseModel):
+class ChatResumeRequest(SessionCredentials):
     """Class representing a request to resume a chat after a tool interrupt."""
 
     thread_id: str = Field(min_length=1)
