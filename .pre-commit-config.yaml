@@ -1,0 +1,28 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.1
+    hooks:
+    -   id: ruff
+        args: [--fix]
+    -   id: ruff-format
+- repo: local
+  hooks:
+    - id: cx-secret-detection
+      name: Cx Secret Detection
+      entry: cx
+      description: Run Cx CLI secret detection
+      stages:
+        - pre-commit
+      args:
+        - hooks
+        - pre-commit
+        - secrets-scan
+      language: system
+      pass_filenames: false
+      minimum_pre_commit_version: 3.2.0

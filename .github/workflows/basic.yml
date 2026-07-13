@@ -1,0 +1,27 @@
+name: Basic Checks
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+
+      - name: Lint with ruff
+        run: uv run ruff check .
+
+      - name: Check formatting and line length with ruff
+        run: uv run ruff format --check .
