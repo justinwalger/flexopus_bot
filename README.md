@@ -61,41 +61,29 @@ uv run streamlit run app.py
 
 ### Docker Build and Run
 
-The API and UI are split into separate Compose files (`docker-compose.api.yml` and
-`docker-compose.ui.yml`) so each service can be built, run, and deployed independently. They
-communicate over a shared external Docker network, which needs to be created once:
+Each service has its own Dockerfile at the repo root and listens on `$PORT` (defaulting to
+`8080`). Build and run them independently:
 
 ```bash
-docker network create flexopus-network
+docker build -f Dockerfile.api -t flexopus-api .
+docker run --env-file .env -p 8000:8080 flexopus-api
 ```
-
-Start the API:
 
 ```bash
-docker compose -f docker-compose.api.yml up --build
+docker build -f Dockerfile.streamlit -t flexopus-ui .
+docker run --env-file .env -e BACKEND_API_URL=http://host.docker.internal:8000/api -p 8501:8080 flexopus-ui
 ```
-
-Start the UI:
-
-```bash
-docker compose -f docker-compose.ui.yml up --build
-```
-
-Since both services join the shared `flexopus-network`, the UI can still reach the API by service
-name (`http://api:8080/api`), no host override needed. The API is published on host port `8000` and
-the UI on host port `8501`; both containers listen internally on `8080`.
 
 ### Deploying to Cloud Run (GCP)
 
-`Dockerfile.api` and `Dockerfile.streamlit` each listen on `$PORT` (defaulting to `8080`), so they
-build and run as-is with `gcloud run deploy`, e.g.:
+Both Dockerfiles build and run as-is with `gcloud run deploy`, e.g.:
 
 ```bash
 gcloud run deploy flexopus-api --source . --dockerfile Dockerfile.api
 gcloud run deploy flexopus-ui --source . --dockerfile Dockerfile.streamlit
 ```
 
-Cloud Run doesn't share the Docker Compose network, so after the API service is deployed, set
+Each Cloud Run service gets its own URL, so after the API service is deployed, set
 `BACKEND_API_URL` on the UI service to the API's actual Cloud Run URL:
 
 ```bash
@@ -127,14 +115,3 @@ When that happens, the UI shows the pending tool name and arguments, and you can
 - The project uses Ruff for linting and import sorting with a 100 character line length.
 
 
-## TODOS
-- Deploy to hyperscaler
-- Check docker
-- Terraform setup
-- Add POST functionality
-- possiblity to create visualizations
-- possibility to export reports
-- add eval
-- add tests
-- subagents etc
-- auth
