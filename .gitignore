@@ -16,3 +16,5 @@ terraform/.terraform/
 *.tfstate.*
 *.tfplan
 *.tfvars
+key.json
+terraform/**/key.json
