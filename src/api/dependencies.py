@@ -4,7 +4,6 @@ Currently simple dependency injection for the ChatService, but can be expanded
 in the future to include other dependencies as needed.
 """
 
-import os
 from typing import Any
 
 from langchain.agents.middleware import HumanInTheLoopMiddleware
@@ -12,6 +11,8 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 
 from application.chat_service import ChatService
+from common.config import get_settings
+from common.hitl import BOOKING_CREATE_TOOL, BOOKING_DELETE_TOOL
 from llm.agent import ChatAgent
 from llm.prompts import CHAT_SYSTEM_PROMPT
 from llm.tools.basic import get_all_basic_tools
@@ -21,12 +22,11 @@ from llm.tools.integrations.flexopus_client import set_flexopus_credentials
 
 
 def build_model(gemini_api_key: str) -> BaseChatModel:
-    provider = os.getenv("LLM_PROVIDER", "google_genai")
-    model_name = os.getenv("LLM_MODEL", "gemini-3.1-flash-lite")
+    settings = get_settings()
 
     return init_chat_model(
-        model=f"{model_name}",
-        model_provider=provider,
+        model=settings.llm_model,
+        model_provider=settings.llm_provider,
         api_key=gemini_api_key,
     )
 
@@ -48,11 +48,11 @@ def get_chat_service(
         middleware=[
             HumanInTheLoopMiddleware(
                 interrupt_on={
-                    "Buchung-anlegen": {
+                    BOOKING_CREATE_TOOL: {
                         "allowed_decisions": ["approve", "reject"],
                         "description": _describe_booking_create,
                     },
-                    "Buchung-loeschen": {
+                    BOOKING_DELETE_TOOL: {
                         "allowed_decisions": ["approve", "reject"],
                         "description": _describe_booking_delete,
                     },

@@ -1,10 +1,11 @@
 """Flexopus HTTP client for authenticated GET and POST requests."""
 
-import os
 from contextvars import ContextVar
 from typing import Any
 
 import httpx
+
+from common.config import get_settings
 
 # Holds the per-request Flexopus credentials collected from the user at the
 # start of a chat session, so tool calls issued within that request can reach
@@ -25,11 +26,12 @@ class FlexopusClient:
     ):
         session = _session_credentials.get()
         session_token, session_base_url = session if session else (None, None)
+        settings = get_settings()
 
-        token = token or session_token or os.getenv("FLEXOPUS_API_TOKEN")
+        token = token or session_token or settings.flexopus_api_token
         if not token:
             raise ValueError("FLEXOPUS_API_TOKEN is not configured.")
-        self.base_url = base_url or session_base_url or os.getenv("FLEXOPUS_API_URL")
+        self.base_url = base_url or session_base_url or settings.flexopus_api_url
         if not self.base_url:
             raise ValueError("FLEXOPUS_API_URL is not configured.")
         self.headers = {

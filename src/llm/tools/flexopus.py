@@ -5,6 +5,7 @@ from typing import Any
 from langchain.tools import tool
 from pydantic import EmailStr
 
+from common.hitl import BOOKING_CREATE_TOOL, BOOKING_DELETE_TOOL
 from llm.tools.integrations.flexopus_client import FlexopusClient
 from llm.tools.schemas import (
     BookableAvailabilityBookable,
@@ -280,7 +281,7 @@ async def get_bookable_bookings(
 
 @tool(
     args_schema=BookingCreateInput,
-    name_or_callable="Buchung-anlegen",
+    name_or_callable=BOOKING_CREATE_TOOL,
     description="Creates a Flexopus booking. Requires approval before execution.",
 )
 async def create_booking(
@@ -317,7 +318,7 @@ async def create_booking(
 
 @tool(
     args_schema=BookingDeleteInput,
-    name_or_callable="Buchung-loeschen",
+    name_or_callable=BOOKING_DELETE_TOOL,
     description="Deletes a Flexopus booking. Requires approval before execution.",
 )
 async def delete_booking(booking_id: int, booking_summary: str = "") -> dict[str, Any]:

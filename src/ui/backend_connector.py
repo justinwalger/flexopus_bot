@@ -1,15 +1,13 @@
 import json
-import os
 from collections.abc import Iterator
 
 import httpx
+from config import get_settings
 
 
 class BackendConnector:
     def __init__(self, api_url: str | None = None, timeout: float = 60.0) -> None:
-        self.api_url = api_url or os.getenv("BACKEND_API_URL")
-        if not self.api_url:
-            raise ValueError("BACKEND_API_URL is not configured.")
+        self.api_url = api_url or get_settings().backend_api_url
         self.timeout = timeout
 
     def ask_backend(

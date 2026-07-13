@@ -1,10 +1,11 @@
+from datetime import datetime
+
 from langchain.tools import tool
 
 
 @tool(name_or_callable="Tag-ausgeben", description="Get current day of the week")
-def get_current_day() -> str:
+def get_current_day() -> datetime:
     """Get the current day as timestamp"""
-    from datetime import datetime
 
     return datetime.now()
 
