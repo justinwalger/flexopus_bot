@@ -43,10 +43,11 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init & Apply
+        working-directory: terraform
         env:
           TF_VAR_project_id: ${{ env.PROJECT_ID }}
           TF_VAR_backend_image: ${{ env.REGISTRY }}/backend:${{ github.sha }}
           TF_VAR_frontend_image: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
         run: |
-          terraform init
+          terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" -backend-config="prefix=flexopus"
           terraform apply -auto-approve

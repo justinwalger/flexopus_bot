@@ -5,6 +5,7 @@ terraform {
       version = "~> 5.0"
     }
   }
+  backend "gcs" {}
 }
 
 provider "google" {
@@ -106,7 +107,7 @@ output "frontend_url" {
 }
 
 output "ci_deployer_key" {
-  EOT
+  description = "Base64-encoded SA key JSON. Decode with: terraform output -raw ci_deployer_key | base64 -d"
   value       = google_service_account_key.ci_deployer_key.private_key
   sensitive   = true
 }
