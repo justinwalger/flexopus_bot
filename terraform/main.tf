@@ -12,6 +12,40 @@ provider "google" {
   region  = "europe-west1"
 }
 
+resource "google_artifact_registry_repository" "flexopus" {
+  location      = "europe-west1"
+  repository_id = "flexopus"
+  format        = "DOCKER"
+}
+
+resource "google_service_account" "ci_deployer" {
+  account_id   = "github-actions-deployer"
+  display_name = "CI/CD deployer for GitHub Actions"
+}
+
+resource "google_artifact_registry_repository_iam_member" "ci_deployer_writer" {
+  location   = google_artifact_registry_repository.flexopus.location
+  repository = google_artifact_registry_repository.flexopus.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.ci_deployer.email}"
+}
+
+resource "google_project_iam_member" "ci_deployer_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
+}
+
+resource "google_project_iam_member" "ci_deployer_sa_user" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
+}
+
+resource "google_service_account_key" "ci_deployer_key" {
+  service_account_id = google_service_account.ci_deployer.name
+}
+
 # fastapi backend
 resource "google_cloud_run_v2_service" "fastapi_backend" {
   name     = "fastapi-backend"
@@ -46,7 +80,6 @@ resource "google_cloud_run_v2_service" "streamlit_frontend" {
     containers {
       image = var.frontend_image
 
-      # Terraform passes the backend's Cloud Run URL to the frontend as an env var.
       env {
         name  = "BACKEND_API_URL"
         value = "${google_cloud_run_v2_service.fastapi_backend.uri}/api"
@@ -70,4 +103,10 @@ resource "google_cloud_run_v2_service_iam_member" "frontend_public" {
 output "frontend_url" {
   description = "public frontend url"
   value       = google_cloud_run_v2_service.streamlit_frontend.uri
+}
+
+output "ci_deployer_key" {
+  EOT
+  value       = google_service_account_key.ci_deployer_key.private_key
+  sensitive   = true
 }
