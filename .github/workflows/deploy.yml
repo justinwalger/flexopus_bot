@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - main #
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: europe-west1
+  REPO_NAME: flexopus
+  REGISTRY: europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/flexopus
 
 jobs:
-  deploy-services:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,28 +23,30 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Set up Cloud SDK
+      - name: Set up Cloud SDK and Docker Auth
         uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker europe-west1-docker.pkg.dev --quiet
 
-      - name: Deploy FastAPI Backend
+      - name: Build and Push FastAPI Backend
         run: |
-          cp Dockerfile.api Dockerfile
+          IMAGE_TAG=${{ env.REGISTRY }}/backend:${{ github.sha }}
+          docker build -t $IMAGE_TAG -f Dockerfile.api .
+          docker push $IMAGE_TAG
 
-          gcloud run deploy fastapi-backend \
-            --source . \
-            --region europe-west1 \
-            --allow-unauthenticated \
-            --format="value(status.url)" > backend_url.txt
-
-      - name: Deploy Streamlit Frontend
+      - name: Build and Push Streamlit Frontend
         run: |
-          BACKEND_URL=$(cat backend_url.txt)
-          echo "Backend running at: $BACKEND_URL"
+          IMAGE_TAG=${{ env.REGISTRY }}/frontend:${{ github.sha }}
+          docker build -t $IMAGE_TAG -f Dockerfile.streamlit .
+          docker push $IMAGE_TAG
 
-          cp Dockerfile.streamlit Dockerfile
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-          gcloud run deploy streamlit-frontend \
-            --source . \
-            --region europe-west1 \
-            --allow-unauthenticated \
-            --set-env-vars BACKEND_API_URL=$BACKEND_URL/api
+      - name: Terraform Init & Apply
+        env:
+          TF_VAR_project_id: ${{ env.PROJECT_ID }}
+          TF_VAR_backend_image: ${{ env.REGISTRY }}/backend:${{ github.sha }}
+          TF_VAR_frontend_image: ${{ env.REGISTRY }}/frontend:${{ github.sha }}
+        run: |
+          terraform init
+          terraform apply -auto-approve
