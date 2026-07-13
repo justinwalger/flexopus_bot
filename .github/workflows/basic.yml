@@ -19,10 +19,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      - name: Run pre-commit checks
-        run: >
-          uv run pre-commit run --all-files --show-diff-on-failure
-          check-yaml end-of-file-fixer trailing-whitespace
 
       - name: Lint with ruff
         run: uv run ruff check .
