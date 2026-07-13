@@ -13,39 +13,11 @@ provider "google" {
   region  = "europe-west1"
 }
 
-resource "google_artifact_registry_repository" "flexopus" {
-  location      = "europe-west1"
-  repository_id = "flexopus"
-  format        = "DOCKER"
-}
-
-resource "google_service_account" "ci_deployer" {
-  account_id   = "github-actions-deployer"
-  display_name = "CI/CD deployer for GitHub Actions"
-}
-
-resource "google_artifact_registry_repository_iam_member" "ci_deployer_writer" {
-  location   = google_artifact_registry_repository.flexopus.location
-  repository = google_artifact_registry_repository.flexopus.name
-  role       = "roles/artifactregistry.writer"
-  member     = "serviceAccount:${google_service_account.ci_deployer.email}"
-}
-
-resource "google_project_iam_member" "ci_deployer_run_admin" {
-  project = var.project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
-}
-
-resource "google_project_iam_member" "ci_deployer_sa_user" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.ci_deployer.email}"
-}
-
-resource "google_service_account_key" "ci_deployer_key" {
-  service_account_id = google_service_account.ci_deployer.name
-}
+# The Artifact Registry repo, the github-actions-deployer service account, and
+# its IAM grants live in ./bootstrap instead of here - the deployer identity
+# used to apply this config isn't (and shouldn't be) allowed to manage IAM on
+# itself or the project, so those resources have to be applied separately by
+# a privileged identity. See terraform/bootstrap/main.tf.
 
 # fastapi backend
 resource "google_cloud_run_v2_service" "fastapi_backend" {
@@ -56,7 +28,7 @@ resource "google_cloud_run_v2_service" "fastapi_backend" {
   template {
     containers {
       image = var.backend_image
-      
+
       ports {
         container_port = 8080
       }
