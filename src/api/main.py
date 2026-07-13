@@ -10,7 +10,8 @@ from api.routes import chat
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # TODO: Replace InMemorySaver with a persistent checkpointer (e.g., database-backed) for production use (probably overkill)
+    # TODO: Replace InMemorySaver with a persistent checkpointer (e.g., database-backed)
+    # for production use (probably overkill)
 
     checkpointer = InMemorySaver()
 

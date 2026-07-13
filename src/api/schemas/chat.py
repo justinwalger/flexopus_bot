@@ -14,7 +14,7 @@ class SessionCredentials(BaseModel):
 
 
 class ChatRequest(SessionCredentials):
-    """ChatRequest represents a request to the chat API, containing the thread ID and the message to be sent."""
+    """Represents a request to the chat API, containing the thread ID and the message to send."""
 
     thread_id: str = Field(min_length=1)
     message: str = Field(min_length=1)

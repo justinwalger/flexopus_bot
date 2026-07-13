@@ -16,7 +16,11 @@ async def stream_chat(
     request: ChatRequest,
     http_request: Request,
 ) -> StreamingResponse:
-    """Main endpoint for streaming chat responses. It takes a ChatRequest containing the thread ID and message, and streams back the response from the chat service."""
+    """Main endpoint for streaming chat responses.
+
+    It takes a ChatRequest containing the thread ID and message, and streams
+    back the response from the chat service.
+    """
 
     service = get_chat_service(
         checkpointer=http_request.app.state.checkpointer,
@@ -43,7 +47,11 @@ async def resume_chat(
     request: ChatResumeRequest,
     http_request: Request,
 ) -> StreamingResponse:
-    """Resumes a chat after a tool interrupt. It takes a ChatResumeRequest containing the thread ID, interrupt ID, and the decision made by the user, and streams back the response from the chat service."""
+    """Resumes a chat after a tool interrupt.
+
+    It takes a ChatResumeRequest containing the thread ID, interrupt ID, and
+    the decision made by the user, and streams back the response from the chat service.
+    """
 
     service = get_chat_service(
         checkpointer=http_request.app.state.checkpointer,

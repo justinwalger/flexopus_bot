@@ -31,9 +31,7 @@ def _render_credentials_gate() -> None:
     """Ask the user for the Flexopus and Gemini credentials once at the start
     of the session, before any chat interaction is possible."""
     st.title("Flexopus Assistant", anchor=False)
-    st.caption(
-        "Bitte gib deine Zugangsdaten ein, um eine neue Sitzung zu starten."
-    )
+    st.caption("Bitte gib deine Zugangsdaten ein, um eine neue Sitzung zu starten.")
 
     with st.form("credentials_form"):
         flexopus_api_key = st.text_input("Flexopus API Key", type="password")
