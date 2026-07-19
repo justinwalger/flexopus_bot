@@ -51,6 +51,12 @@ def _render_credentials_gate() -> None:
         st.session_state.gemini_api_key = gemini_api_key
         st.rerun()
 
+    if st.button("Überspringen (Server-Zugangsdaten verwenden)"):
+        st.session_state.flexopus_api_key = ""
+        st.session_state.flexopus_url = ""
+        st.session_state.gemini_api_key = ""
+        st.rerun()
+
 
 if "flexopus_api_key" not in st.session_state:
     _render_credentials_gate()

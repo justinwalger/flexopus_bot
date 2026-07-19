@@ -25,3 +25,36 @@ jobs:
 
       - name: Check formatting and line length with ruff
         run: uv run ruff format --check .
+
+      - name: Run tests with pytest
+        run: uv run pytest --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=src tests/ | tee pytest-coverage.txt
+
+      - name: Pytest coverage comment
+        uses: MishaKav/pytest-coverage-comment@v1
+        with:
+          pytest-coverage-path: ./pytest-coverage.txt
+          junitxml-path: ./pytest.xml
+
+  evals:
+    runs-on: ubuntu-latest
+
+    environment: deepeval-approval
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run FlexBot deepeval evals
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          CONFIDENT_API_KEY: ${{ secrets.CONFIDENT_API_KEY }}
+          FLEXOPUS_API_TOKEN: ${{ secrets.FLEXOPUS_API_TOKEN }}
+          FLEXOPUS_API_URL: ${{ secrets.FLEXOPUS_API_URL }}
+        run: uv run deepeval test run evals/

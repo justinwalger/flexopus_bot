@@ -19,6 +19,7 @@ class ChatAgent:
         tools: Sequence[Any],
         system_prompt: str,
         checkpointer: Any,
+        state: Any,
         middleware: Sequence[HumanInTheLoopMiddleware] | None = None,
     ) -> None:
 
@@ -28,6 +29,7 @@ class ChatAgent:
             system_prompt=system_prompt,
             checkpointer=checkpointer,
             middleware=middleware,
+            state_schema=state,
         )
 
     async def stream(
@@ -60,7 +62,32 @@ class ChatAgent:
                 if tool_input:
                     content += f" ({tool_input})"
 
-                yield {"type": "tool", "content": content}
+                yield {
+                    "type": "tool",
+                    "content": content,
+                    "name": tool_name,
+                    "input": tool_input,
+                    "run_id": event.get("run_id"),
+                }
+
+            # Handle tool completion, so callers can see what a tool returned
+            # (not just that it started) without re-deriving it elsewhere.
+            elif event_type == "on_tool_end":
+                output = event.get("data", {}).get("output")
+
+                # A tool that writes to graph state (e.g. save_user_name) returns
+                # a Command instead of a plain ToolMessage - Command isn't JSON
+                # serializable, so pull its ToolMessage content out instead.
+                if isinstance(output, Command):
+                    command_messages = output.update.get("messages", [])
+                    output = command_messages[0] if command_messages else None
+
+                yield {
+                    "type": "tool_result",
+                    "name": event.get("name", "tool"),
+                    "output": getattr(output, "content", output),
+                    "run_id": event.get("run_id"),
+                }
 
             # Handle tool interrupts
             elif event_type == "on_chain_stream":

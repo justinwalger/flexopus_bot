@@ -18,3 +18,16 @@ terraform/.terraform/
 *.tfvars
 key.json
 terraform/**/key.json
+
+htmlcov
+.coverage
+.claude
+.DS_Store
+.deepeval
+
+# deepeval
+data
+
+.terraform.lock.hcl
+LICENSE.txt
+.env.local

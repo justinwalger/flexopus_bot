@@ -6,11 +6,13 @@ from pydantic import BaseModel, Field
 
 
 class SessionCredentials(BaseModel):
-    """Credentials the user supplies at the start of a chat session."""
+    """Credentials the user supplies at the start of a chat session.
 
-    flexopus_api_key: str = Field(min_length=1)
-    flexopus_url: str = Field(min_length=1)
-    gemini_api_key: str = Field(min_length=1)
+    Any field left blank falls back to the server-side .env credentials."""
+
+    flexopus_api_key: str | None = None
+    flexopus_url: str | None = None
+    gemini_api_key: str | None = None
 
 
 class ChatRequest(SessionCredentials):

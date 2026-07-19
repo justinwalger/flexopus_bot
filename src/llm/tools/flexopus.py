@@ -2,10 +2,12 @@ import csv
 from io import StringIO
 from typing import Any
 
-from langchain.tools import tool
+from langchain.tools import ToolRuntime, tool
 from pydantic import EmailStr
 
 from common.hitl import BOOKING_CREATE_TOOL, BOOKING_DELETE_TOOL
+from llm.tools import register_tool
+from llm.tools.formatting import _describe_booking_create, _describe_booking_delete
 from llm.tools.integrations.flexopus_client import FlexopusClient
 from llm.tools.schemas import (
     BookableAvailabilityBookable,
@@ -36,25 +38,8 @@ def _error_payload(message: str, exception: Exception) -> dict[str, Any]:
     return {"error": message, "details": str(exception)}
 
 
-def get_all_tools() -> list:
-    """Get all tools for the Flexopus agent."""
-    return [
-        list_flexopus_buildings,
-        list_flexopus_groups,
-        get_buildings_by_id,
-        get_user_by_email,
-        list_flexopus_users_export,
-        get_location_bookings,
-        get_location_bookables,
-        get_location_bookables_occupancy,
-        get_bookable_availability,
-        get_bookable_bookings,
-        create_booking,
-        delete_booking,
-    ]
-
-
 # BUILDINGS
+@register_tool("list_flexopus_buildings")
 @tool(
     name_or_callable="Gebaude-anzeigen",
     description="Lists Flexopus office buildings and their available locations.",
@@ -62,7 +47,8 @@ def get_all_tools() -> list:
 async def list_flexopus_buildings() -> list[dict[str, Any]] | dict[str, Any]:
     """List Flexopus office buildings and their available locations.
 
-    Use when the user asks about offices, buildings, addresses,
+    Use when the user asks about offices, buildings, addresses, floors, or
+    locations.
     """
     try:
         return await _client().get("/buildings")
@@ -70,18 +56,19 @@ async def list_flexopus_buildings() -> list[dict[str, Any]] | dict[str, Any]:
         return _error_payload("Flexopus returned an error while fetching buildings.", exception)
 
 
+@register_tool("get_building_bookings")
 @tool(
     args_schema=BuildingApiInput,
     name_or_callable="Buchungen_nach_Gebaeude",
     description="Lists Flexopus booking by building",
 )
-async def get_buildings_by_id(
+async def get_building_bookings(
     building_id: int, from_date: str, to_date: str
 ) -> list[FlexopusBooking] | dict[str, Any]:
-    """List Flexopus office buildings and their available locations.
+    """List Flexopus bookings for a specific building within a date range.
 
-    Use when the user asks about offices, buildings, addresses,
-    floors, locations, or building IDs.
+    Use when the user asks which bookings exist for a building, or about a
+    building's schedule or occupancy by building ID.
     """
     try:
         params = {"from": from_date, "to": to_date}
@@ -94,12 +81,12 @@ async def get_buildings_by_id(
 
 
 # GROUPS
+@register_tool("list_flexopus_groups")
 @tool(name_or_callable="Nutzergruppen-anzeigen", description="Lists Flexopus groups ")
 async def list_flexopus_groups() -> list[dict[str, Any]] | dict[str, Any]:
-    """List Flexopus office buildings and their available locations.
+    """List Flexopus user groups.
 
-    Use when the user asks about offices, buildings, addresses,
-    floors, locations, or building IDs.
+    Use when the user asks about groups, teams, or user group memberships.
     """
     try:
         return await _client().get("/groups")
@@ -107,6 +94,7 @@ async def list_flexopus_groups() -> list[dict[str, Any]] | dict[str, Any]:
         return _error_payload("Flexopus returned an error while listing groups.", exception)
 
 
+@register_tool("get_user_by_email")
 @tool(
     "Nutzer-nach-E-Mail-suchen",
     args_schema=UserEmailInput,
@@ -116,15 +104,22 @@ async def list_flexopus_groups() -> list[dict[str, Any]] | dict[str, Any]:
         "their Flexopus user record or user ID."
     ),
 )
-async def get_user_by_email(user_email: EmailStr) -> list[FlexopusUser] | dict[str, Any]:
+async def get_user_by_email(
+    user_email: EmailStr, runtime: ToolRuntime
+) -> list[FlexopusUser] | dict[str, Any]:
     """Return the Flexopus user record(s) for an exact email address."""
     try:
         payload = await _client().get(f"/users/by-email/{user_email}")
-        return [FlexopusUser.model_validate(item) for item in payload]
+
+        items = payload if isinstance(payload, list) else [payload] if payload else []
+        users = [FlexopusUser.model_validate(item) for item in items]
+
+        return users if users else {"message": "No Flexopus user found for the provided email."}
     except RuntimeError as exception:
         return _error_payload("Flexopus returned an error while searching by email.", exception)
 
 
+@register_tool("list_flexopus_users_export")
 @tool(
     name_or_callable="Nutzer-export-anzeigen",
     description=(
@@ -132,7 +127,9 @@ async def get_user_by_email(user_email: EmailStr) -> list[FlexopusUser] | dict[s
         "Use this when the user asks for all users or a complete user list."
     ),
 )
-async def list_flexopus_users_export() -> list[FlexopusUserExportRow] | dict[str, Any]:
+async def list_flexopus_users_export(
+    runtime: ToolRuntime,
+) -> list[FlexopusUserExportRow] | dict[str, Any]:
     """Return the full Flexopus user export as structured CSV rows."""
     try:
         response_text = await _client(timeout=30.0).get(
@@ -144,33 +141,41 @@ async def list_flexopus_users_export() -> list[FlexopusUserExportRow] | dict[str
             response_text = str(response_text)
 
         reader = csv.DictReader(StringIO(response_text))
-        rows: list[FlexopusUserExportRow] = []
+        users: list[FlexopusUserExportRow] = []
+        user_email = runtime.state.get("mail")
 
-        for row in reader:
+        for user in reader:
             normalized_row = {
-                "name": row.get("name", ""),
-                "email": row.get("email", ""),
-                "department": row.get("department", ""),
-                "function": row.get("function", ""),
-                "about": row.get("about", ""),
-                "notify": row.get("notify", ""),
-                "groups": row.get("groups", ""),
-                "roles": row.get("roles", ""),
-                "timezone": row.get("timezone", ""),
-                "id": row.get("id", ""),
-                "created": row.get("created", ""),
-                "license_plates": row.get("license_plates", ""),
-                "phone": row.get("phone", ""),
-                "tags": row.get("tags", ""),
-                "cost_center": row.get("cost_center", ""),
+                "name": user.get("name", ""),
+                "email": user.get("email", ""),
+                "department": user.get("department", ""),
+                "function": user.get("function", ""),
+                "about": user.get("about", ""),
+                "notify": user.get("notify", ""),
+                "groups": user.get("groups", ""),
+                "roles": user.get("roles", ""),
+                "timezone": user.get("timezone", ""),
+                "id": user.get("id", ""),
+                "created": user.get("created", ""),
+                "license_plates": user.get("license_plates", ""),
+                "phone": user.get("phone", ""),
+                "tags": user.get("tags", ""),
+                "cost_center": user.get("cost_center", ""),
             }
-            rows.append(FlexopusUserExportRow.model_validate(normalized_row))
+            users.append(FlexopusUserExportRow.model_validate(normalized_row))
 
-        return rows
+        current_user = [user for user in users if user.email.lower() == user_email]
+
+        return (
+            current_user
+            if current_user
+            else {"message": f"User export is empty or no user found for  ({user_email})."}
+        )
     except RuntimeError as exception:
         return _error_payload("Flexopus returned an error while exporting users.", exception)
 
 
+@register_tool("get_location_bookings")
 @tool(
     args_schema=LocationBookingsInput,
     name_or_callable="Standort-Buchungen-anzeigen",
@@ -189,6 +194,7 @@ async def get_location_bookings(
         )
 
 
+@register_tool("get_location_bookables")
 @tool(
     args_schema=LocationIdInput,
     name_or_callable="Standort-Buchbare-anzeigen",
@@ -204,6 +210,7 @@ async def get_location_bookables(location_id: int) -> list[LocationBookable] | d
         )
 
 
+@register_tool("get_location_bookables_occupancy")
 @tool(
     args_schema=LocationOccupancyInput,
     name_or_callable="Standort-Auslastung-anzeigen",
@@ -225,6 +232,7 @@ async def get_location_bookables_occupancy(
         )
 
 
+@register_tool("get_bookable_availability")
 @tool(
     args_schema=BookableAvailabilityInput,
     name_or_callable="Buchbare-Verfuegbarkeit-anzeigen",
@@ -261,6 +269,7 @@ async def get_bookable_availability(
         )
 
 
+@register_tool("get_bookable_bookings")
 @tool(
     args_schema=BookableIdInput,
     name_or_callable="Buchbare-Buchungen-anzeigen",
@@ -279,6 +288,8 @@ async def get_bookable_bookings(
         )
 
 
+# TODO validate current user
+@register_tool("create_booking", approval_required=True, hitl_description=_describe_booking_create)
 @tool(
     args_schema=BookingCreateInput,
     name_or_callable=BOOKING_CREATE_TOOL,
@@ -316,6 +327,8 @@ async def create_booking(
         return _error_payload("Flexopus returned an error while creating a booking.", exception)
 
 
+# TODO: validate current user
+@register_tool("delete_booking", approval_required=True, hitl_description=_describe_booking_delete)
 @tool(
     args_schema=BookingDeleteInput,
     name_or_callable=BOOKING_DELETE_TOOL,

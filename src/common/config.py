@@ -6,12 +6,15 @@ at `ui/config.py`, since it runs in a separate container with its own env vars.
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_ROOT_DIR = Path(__file__).resolve().parents[2]
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ROOT_DIR / ".env", extra="ignore")
 
     llm_provider: str = "google_genai"
     llm_model: str = "gemini-3.1-flash-lite"
