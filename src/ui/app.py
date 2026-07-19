@@ -32,6 +32,12 @@ def _render_credentials_gate() -> None:
     of the session, before any chat interaction is possible."""
     st.title("Flexopus Assistant", anchor=False)
     st.caption("Bitte gib deine Zugangsdaten ein, um eine neue Sitzung zu starten.")
+    st.info(
+        "Inoffizielles, nicht-kommerzielles Hobby-Projekt ohne Verbindung zu Flexopus - "
+        "keine Unterstützung oder Billigung durch Flexopus. \"Flexopus\" sowie zugehörige "
+        "Namen, Logos und Marken sind Eigentum der jeweiligen Rechteinhaber. Nutzung "
+        "erfolgt kostenlos, auf eigene Gefahr und ohne Gewährleistung."
+    )
 
     with st.form("credentials_form"):
         flexopus_api_key = st.text_input("Flexopus API Key", type="password")
