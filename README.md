@@ -43,17 +43,18 @@ The project uses Python 3.13.
 
 ### Configuration
 
-The UI asks each user for their Flexopus API key, Flexopus URL, and Gemini API key at the start of
-the session, so those three don't need to live in `.env`. Environment variables loaded from `.env`
-in the project root are just local-dev fallbacks and tracing config:
+Copy `.env.example` to `.env` and fill in what you need:
 
-- `FLEXOPUS_API_TOKEN` (fallback if not supplied in the session form)
-- `FLEXOPUS_API_URL` (fallback if not supplied in the session form)
-- `GOOGLE_API_KEY` (fallback if not supplied in the session form)
-- `LANGSMITH_TRACING`
-- `LANGSMITH_ENDPOINT`
-- `LANGSMITH_API_KEY`
-- `LANGSMITH_PROJECT`
+```bash
+cp .env.example .env
+```
+
+`BACKEND_API_URL` is the only variable the app actually requires (the Streamlit UI won't start
+without it). The UI asks each user for their Flexopus API key, Flexopus URL, and Gemini API key at
+the start of the session, so `FLEXOPUS_API_TOKEN` / `FLEXOPUS_API_URL` / `GOOGLE_API_KEY` in `.env`
+are only used as a server-side fallback if a user skips that form. Everything else in
+`.env.example` (LangSmith tracing, deepeval/Confident AI) is optional and only relevant for
+tracing or running `evals/` locally.
 
 ### Local Run
 
