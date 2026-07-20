@@ -10,8 +10,8 @@ Flexopus credentials in the environment.
 
 """
 
-# TODO FUTURE: This does real stuff (create / delete bookings). Should be done with Test data (eg. test
-# flex opus tentant) in order to not break anything.!
+# TODO FUTURE: This does real stuff (create / delete bookings). Should be done with Test data (eg.
+# test flex opus tentant) in order to not break anything.!
 from datetime import datetime, timedelta
 
 import pytest
