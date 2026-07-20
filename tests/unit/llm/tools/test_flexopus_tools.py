@@ -6,6 +6,7 @@ import json
 import httpx
 import pytest
 import respx
+from langchain.tools import ToolRuntime
 
 from llm.tools.flexopus import (
     create_booking,
@@ -22,6 +23,17 @@ from llm.tools.flexopus import (
     list_flexopus_users_export,
 )
 from llm.tools.integrations.flexopus_client import set_flexopus_credentials
+
+
+def _make_runtime(mail: str) -> ToolRuntime:
+    return ToolRuntime(
+        state={"mail": mail},
+        context=None,
+        config={},
+        stream_writer=lambda _: None,
+        tool_call_id=None,
+        store=None,
+    )
 
 
 @pytest.mark.asyncio
@@ -168,7 +180,9 @@ async def test_list_flexopus_users_export_parses_csv():
             return_value=httpx.Response(200, text=csv_body)
         )
 
-        result = await list_flexopus_users_export.ainvoke({})
+        result = await list_flexopus_users_export.ainvoke(
+            {"runtime": _make_runtime("jane@example.com")}
+        )
 
     assert route.called
     assert route.calls.last.request.url.params["format"] == "csv"
@@ -201,7 +215,14 @@ async def test_get_location_bookings_returns_payload():
         "from": "2021-11-01T09:00:00Z",
         "to": "2021-11-01T10:00:00Z",
         "livemap": "https://flexopus.test/livemap/1",
-        "bookable": {"id": 10, "name": "Desk 1", "status": 1, "tags": [], "type": 1},
+        "bookable": {
+            "id": 10,
+            "name": "Desk 1",
+            "status": 1,
+            "tags": [],
+            "type": 1,
+            "capacity": None,
+        },
         "user": {
             "id": 5,
             "name": "Jane Doe",

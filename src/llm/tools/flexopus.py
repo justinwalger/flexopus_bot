@@ -104,9 +104,7 @@ async def list_flexopus_groups() -> list[dict[str, Any]] | dict[str, Any]:
         "their Flexopus user record or user ID."
     ),
 )
-async def get_user_by_email(
-    user_email: EmailStr, runtime: ToolRuntime
-) -> list[FlexopusUser] | dict[str, Any]:
+async def get_user_by_email(user_email: EmailStr) -> list[FlexopusUser] | dict[str, Any]:
     """Return the Flexopus user record(s) for an exact email address."""
     try:
         payload = await _client().get(f"/users/by-email/{user_email}")
