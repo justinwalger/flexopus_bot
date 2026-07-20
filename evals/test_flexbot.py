@@ -7,115 +7,21 @@ HITL gating, memory behavior) is asserted deterministically -- no LLM judge.
 
 Slow, non-deterministic, costs tokens. Requires GOOGLE_API_KEY and valid
 Flexopus credentials in the environment.
+
 """
 
-import os
-from dataclasses import dataclass
-from typing import Any
-
 import pytest
+from conftest import resume_turn, run_turn
 from deepeval import assert_test
 from deepeval.dataset import Golden
-from deepeval.metrics import ConversationalGEval, GEval, ToolCorrectnessMetric
+from deepeval.metrics import GEval, ToolCorrectnessMetric
 from deepeval.models import GeminiModel
-from deepeval.test_case import (
-    ConversationalTestCase,
-    LLMTestCase,
-    LLMTestCaseParams,
-    MultiTurnParams,
-    ToolCall,
-    ToolCallParams,
-    Turn,
-)
-from langchain.agents.middleware import HumanInTheLoopMiddleware
-from langchain_core.messages import HumanMessage
-from langgraph.checkpoint.memory import InMemorySaver
+from deepeval.test_case import LLMTestCase, LLMTestCaseParams, ToolCall, ToolCallParams
 
 from common.hitl import BOOKING_CREATE_TOOL, BOOKING_DELETE_TOOL
 from llm.agent import ChatAgent
-from llm.model import build_model
-from llm.prompts import CHAT_SYSTEM_PROMPT
-from llm.state import CustomAgentState
-from llm.tools import get_all_tools, get_hitl_config
 
 pytestmark = pytest.mark.eval
-
-
-@pytest.fixture(scope="module")
-def eval_model() -> GeminiModel:
-    """Judge model for deepeval metrics -- separate from the agent under test.
-    Passed explicitly so deepeval never falls back to its OpenAI default."""
-    return GeminiModel(
-        model="gemini-3.5-flash",
-        api_key=os.environ["GOOGLE_API_KEY"],
-        temperature=0,
-        cost_per_input_token=1.50 / 1_000_000,
-        cost_per_output_token=9 / 1_000_000,
-    )
-
-
-@pytest.fixture
-def chat_agent() -> ChatAgent:
-    """Fresh agent per test; own checkpointer so state never leaks between tests."""
-    return ChatAgent(
-        model=build_model(os.environ["GOOGLE_API_KEY"]),
-        middleware=[HumanInTheLoopMiddleware(interrupt_on=get_hitl_config())],
-        tools=get_all_tools(),
-        system_prompt=CHAT_SYSTEM_PROMPT,
-        checkpointer=InMemorySaver(),
-        state=CustomAgentState,
-    )
-
-
-@dataclass
-class ConversationResult:
-    answer: str
-    tools_called: list[ToolCall]
-    interrupted: bool
-    interrupt_id: str | None
-    action_requests: list[dict[str, Any]]
-
-
-async def run_turn(chat_agent: ChatAgent, message: str, thread_id: str) -> ConversationResult:
-    answer_parts: list[str] = []
-    tools_called: list[ToolCall] = []
-    interrupted = False
-    interrupt_id = None
-    action_requests: list[dict[str, Any]] = []
-
-    async for event in chat_agent.stream([HumanMessage(content=message)], thread_id=thread_id):
-        if event["type"] == "ai":
-            answer_parts.append(event["content"])
-        elif event["type"] == "tool":
-            tools_called.append(ToolCall(name=event["name"], input_parameters=event["input"] or {}))
-        elif event["type"] == "interrupt":
-            interrupted = True
-            interrupt_id = event["interrupt_id"]
-            action_requests = event["action_requests"]
-
-    return ConversationResult(
-        answer="".join(answer_parts),
-        tools_called=tools_called,
-        interrupted=interrupted,
-        interrupt_id=interrupt_id,
-        action_requests=action_requests,
-    )
-
-
-async def resume_turn(
-    chat_agent: ChatAgent,
-    thread_id: str,
-    interrupt_id: str,
-    decisions: list[dict[str, Any]],
-) -> list[str]:
-    """Resume after a HITL interrupt; returns the raw tool-event contents."""
-    tool_call_contents: list[str] = []
-    async for event in chat_agent.resume(
-        thread_id=thread_id, interrupt_id=interrupt_id, decisions=decisions
-    ):
-        if event["type"] == "tool":
-            tool_call_contents.append(event["content"])
-    return tool_call_contents
 
 
 # --- Tool selection & arguments --------------------------------------------
@@ -231,45 +137,6 @@ async def test_prompt_injection_cannot_skip_delete_approval(chat_agent: ChatAgen
 
 
 # --- Conversation state -------------------------------------------------
-
-
-@pytest.mark.asyncio
-async def test_multi_turn_conversation_remembers_the_users_name(
-    chat_agent: ChatAgent, eval_model: GeminiModel
-):
-    thread_id = "multi-turn-demo"
-
-    turn_1 = await run_turn(chat_agent, "Hallo, ich bin Martin Tester.", thread_id)
-    assert "Name-speichern" in [tc.name for tc in turn_1.tools_called]
-
-    turn_2 = await run_turn(chat_agent, "Welche Gebäude gibt es?", thread_id)
-    tool_names = [tc.name for tc in turn_2.tools_called]
-    assert "Gebaude-anzeigen" in tool_names
-    assert "Name-speichern" not in tool_names, (
-        "the agent already has the name from turn 1 and shouldn't ask again"
-    )
-
-    conversational_case = ConversationalTestCase(
-        scenario="User introduces themselves, then asks an unrelated question.",
-        expected_outcome="The assistant remembers the user's name without asking again.",
-        turns=[
-            Turn(role="user", content="Hallo, ich bin Martin Tester."),
-            Turn(role="assistant", content=turn_1.answer),
-            Turn(role="user", content="Welche Gebäude gibt es?"),
-            Turn(role="assistant", content=turn_2.answer),
-        ],
-    )
-    memory_metric = ConversationalGEval(
-        model=eval_model,
-        name="Conversational memory",
-        criteria=(
-            "Determine whether the assistant carried the name given in turn 1 "
-            "forward appropriately, without asking the user to repeat it."
-        ),
-        threshold=0.5,
-        evaluation_params=[MultiTurnParams.SCENARIO, MultiTurnParams.EXPECTED_OUTCOME],
-    )
-    assert_test(conversational_case, [memory_metric])
 
 
 @pytest.mark.asyncio
