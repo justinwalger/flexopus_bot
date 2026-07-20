@@ -7,35 +7,21 @@ in the future to include other dependencies as needed.
 from typing import Any
 
 from langchain.agents.middleware import HumanInTheLoopMiddleware
-from langchain.chat_models import init_chat_model
-from langchain_core.language_models import BaseChatModel
 
 from application.chat_service import ChatService
-from common.config import get_settings
-from common.hitl import BOOKING_CREATE_TOOL, BOOKING_DELETE_TOOL
 from llm.agent import ChatAgent
+from llm.model import build_model
 from llm.prompts import CHAT_SYSTEM_PROMPT
-from llm.tools.basic import get_all_basic_tools
-from llm.tools.flexopus import get_all_tools
-from llm.tools.formatting import _describe_booking_create, _describe_booking_delete
+from llm.state import CustomAgentState
+from llm.tools import get_all_tools, get_hitl_config
 from llm.tools.integrations.flexopus_client import set_flexopus_credentials
-
-
-def build_model(gemini_api_key: str) -> BaseChatModel:
-    settings = get_settings()
-
-    return init_chat_model(
-        model=settings.llm_model,
-        model_provider=settings.llm_provider,
-        api_key=gemini_api_key,
-    )
 
 
 def get_chat_service(
     checkpointer: Any,
-    flexopus_api_key: str,
-    flexopus_url: str,
-    gemini_api_key: str,
+    flexopus_api_key: str | None,
+    flexopus_url: str | None,
+    gemini_api_key: str | None,
 ) -> ChatService:
     """Build a ChatService for the current request, using the Flexopus and Gemini
     credentials the user supplied at the start of the session instead of server-wide
@@ -44,25 +30,20 @@ def get_chat_service(
 
     agent = ChatAgent(
         model=build_model(gemini_api_key=gemini_api_key),
-        # Add HumanInTheLoopMiddleware to the agent to handle tool interrupts
+        # Add HumanInTheLoopMiddleware to the agent to handle tool interrupts. The
+        # interrupt_on config is derived from every tool registered with
+        # approval_required=True (see @register_tool in llm.tools), so new tools
+        # requiring approval don't need to be wired up here.
         middleware=[
             HumanInTheLoopMiddleware(
-                interrupt_on={
-                    BOOKING_CREATE_TOOL: {
-                        "allowed_decisions": ["approve", "reject"],
-                        "description": _describe_booking_create,
-                    },
-                    BOOKING_DELETE_TOOL: {
-                        "allowed_decisions": ["approve", "reject"],
-                        "description": _describe_booking_delete,
-                    },
-                },
+                interrupt_on=get_hitl_config(),
             ),
         ],
         # build the tools list by combining Flexopus tools and basic tools
-        tools=get_all_tools() + get_all_basic_tools(),
+        tools=get_all_tools(),
         system_prompt=CHAT_SYSTEM_PROMPT,
         checkpointer=checkpointer,
+        state=CustomAgentState,
     )
 
     return ChatService(agent=agent)

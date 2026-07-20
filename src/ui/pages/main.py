@@ -30,6 +30,12 @@ def create_main_page():
             anchor=False,
             width="stretch",
         )
+    st.caption(
+        "Inoffizielles Hobby-Projekt, nicht verbunden mit Flexopus. "
+        '"Flexopus" gehört den jeweiligen Rechteinhabern. / '
+        "Unofficial hobby project, not affiliated with Flexopus. "
+        '"Flexopus" belongs to its respective owners.'
+    )
     if "messages" not in st.session_state:
         st.session_state.messages = []
 

@@ -4,6 +4,25 @@ Flexopus 4.7 is a chat application for exploring Flexopus booking data with an L
 It combines a FastAPI backend, LangChain tools, and a Streamlit UI so users can ask questions about
 buildings, locations, bookables, bookings, and user records.
 
+## Disclaimer
+
+This is an **unofficial, non-commercial hobby project**, built for fun and to explore LLM agents
+on top of a real-world booking API. It is **not affiliated with, endorsed by, or sponsored by
+Flexopus** in any way. "Flexopus" and any related names, logos, and trademarks are the property of
+their respective owner(s) and are used here only to describe the product this project integrates
+with.
+
+The code is provided free of charge, "as is", without warranty of any kind, and is not intended
+for commercial or production use. Use at your own risk, and bring your own Flexopus/Gemini
+credentials.
+
+## About Flexopus
+
+[Flexopus](https://flexopus.com) is a third-party workplace-management platform for booking desks,
+rooms, and other shared resources across buildings and locations. This project talks to a
+Flexopus instance's public API to let a chat assistant answer questions and make bookings on a
+user's behalf - it does not modify, replace, or resell any part of Flexopus itself.
+
 ## What It Does
 
 - Answers questions about Flexopus resources in natural language.
@@ -18,24 +37,24 @@ buildings, locations, bookables, bookings, and user records.
 - `src/llm`: agent setup, prompts, state helpers, and Flexopus tool implementations.
 - `src/ui`: Streamlit frontend, chat rendering, and backend API client.
 
-## Local Setup
+## How to Run
 
 The project uses Python 3.13.
 
-The UI now asks each user for their Flexopus API key, Flexopus URL, and Gemini API key at the start
-of the session, so those three no longer need to live in `.env`. Environment variables loaded from
-`.env` in the project root are now just local-dev fallbacks and tracing config:
+### Configuration
 
-- `FLEXOPUS_API_TOKEN` (fallback if not supplied in the session form)
-- `FLEXOPUS_API_URL` (fallback if not supplied in the session form)
-- `GOOGLE_API_KEY` (fallback if not supplied in the session form)
-- `LANGSMITH_TRACING`
-- `LANGSMITH_ENDPOINT`
-- `LANGSMITH_API_KEY`
-- `LANGSMITH_PROJECT`
+Copy `.env.example` to `.env` and fill in what you need:
 
+```bash
+cp .env.example .env
+```
 
-## Running the App
+`BACKEND_API_URL` is the only variable the app actually requires (the Streamlit UI won't start
+without it). The UI asks each user for their Flexopus API key, Flexopus URL, and Gemini API key at
+the start of the session, so `FLEXOPUS_API_TOKEN` / `FLEXOPUS_API_URL` / `GOOGLE_API_KEY` in `.env`
+are only used as a server-side fallback if a user skips that form. Everything else in
+`.env.example` (LangSmith tracing, deepeval) is optional and only relevant for
+tracing or running `evals/` locally.
 
 ### Local Run
 
@@ -113,5 +132,3 @@ When that happens, the UI shows the pending tool name and arguments, and you can
 
 - The UI keeps a `thread_id` per session so tool approvals can resume the same run.
 - The project uses Ruff for linting and import sorting with a 100 character line length.
-
-

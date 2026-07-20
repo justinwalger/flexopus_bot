@@ -32,6 +32,16 @@ def _render_credentials_gate() -> None:
     of the session, before any chat interaction is possible."""
     st.title("Flexopus Assistant", anchor=False)
     st.caption("Bitte gib deine Zugangsdaten ein, um eine neue Sitzung zu starten.")
+    st.info(
+        "**DE:** Inoffizielles, nicht-kommerzielles Hobby-Projekt ohne Verbindung zu "
+        'Flexopus - keine Unterstützung oder Billigung durch Flexopus. "Flexopus" sowie '
+        "zugehörige Namen, Logos und Marken sind Eigentum der jeweiligen Rechteinhaber. "
+        "Nutzung erfolgt kostenlos, auf eigene Gefahr und ohne Gewährleistung.\n\n"
+        "**EN:** Unofficial, non-commercial hobby project, not affiliated with or "
+        'endorsed by Flexopus. "Flexopus" and related names, logos, and trademarks are '
+        "the property of their respective owners. Free to use, at your own risk, "
+        "without warranty."
+    )
 
     with st.form("credentials_form"):
         flexopus_api_key = st.text_input("Flexopus API Key", type="password")
@@ -49,6 +59,12 @@ def _render_credentials_gate() -> None:
         st.session_state.flexopus_api_key = flexopus_api_key
         st.session_state.flexopus_url = flexopus_url
         st.session_state.gemini_api_key = gemini_api_key
+        st.rerun()
+
+    if st.button("Überspringen (Server-Zugangsdaten verwenden)"):
+        st.session_state.flexopus_api_key = ""
+        st.session_state.flexopus_url = ""
+        st.session_state.gemini_api_key = ""
         st.rerun()
 
 

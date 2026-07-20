@@ -15,7 +15,7 @@ _session_credentials: ContextVar[tuple[str, str] | None] = ContextVar(
 )
 
 
-def set_flexopus_credentials(token: str, base_url: str) -> None:
+def set_flexopus_credentials(token: str | None, base_url: str | None) -> None:
     """Bind the Flexopus credentials to use for tool calls made in the current request."""
     _session_credentials.set((token, base_url))
 

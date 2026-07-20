@@ -24,13 +24,13 @@ resource "google_artifact_registry_repository" "flexopus" {
 
   # Every push to main tags a new backend+frontend image by commit SHA and
   # nothing else removes old ones, so without this the repo grows unbounded.
-  # Always keep the 10 most recent versions (rollback safety net) regardless
+  # Always keep the 2 most recent versions (rollback safety net) regardless
   # of age, and delete anything else once it's older than 30 days.
   cleanup_policies {
     id     = "keep-minimum-versions"
     action = "KEEP"
     most_recent_versions {
-      keep_count = 10
+      keep_count = 2
     }
   }
 
@@ -39,7 +39,7 @@ resource "google_artifact_registry_repository" "flexopus" {
     action = "DELETE"
     condition {
       tag_state  = "ANY"
-      older_than = "2592000s" # 30 days
+      older_than = "259200s" # 3 days
     }
   }
 }
