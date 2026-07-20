@@ -53,10 +53,6 @@ jobs:
       - name: Run FlexBot deepeval evals
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-          CONFIDENT_API_KEY: ${{ secrets.CONFIDENT_API_KEY }}
           FLEXOPUS_API_TOKEN: ${{ secrets.FLEXOPUS_API_TOKEN }}
           FLEXOPUS_API_URL: ${{ secrets.FLEXOPUS_API_URL }}
-
-        run: |
-          uv run deepeval test run evals/test_flexbot.py
-          uv run deepeval test run evals/test_flexbot_conversational.py
+        run: uv run pytest evals/

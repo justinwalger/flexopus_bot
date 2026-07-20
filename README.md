@@ -53,7 +53,7 @@ cp .env.example .env
 without it). The UI asks each user for their Flexopus API key, Flexopus URL, and Gemini API key at
 the start of the session, so `FLEXOPUS_API_TOKEN` / `FLEXOPUS_API_URL` / `GOOGLE_API_KEY` in `.env`
 are only used as a server-side fallback if a user skips that form. Everything else in
-`.env.example` (LangSmith tracing, deepeval/Confident AI) is optional and only relevant for
+`.env.example` (LangSmith tracing, deepeval) is optional and only relevant for
 tracing or running `evals/` locally.
 
 ### Local Run
