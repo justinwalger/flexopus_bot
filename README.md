@@ -1,8 +1,10 @@
-# Flexopus 4.7
+# Flexopus
 
-Flexopus 4.7 is a chat application for exploring Flexopus booking data with an LLM-backed assistant.
+Flexopus is a chat application for exploring Flexopus booking data with an LLM-backed assistant.
 It combines a FastAPI backend, LangChain tools, and a Streamlit UI so users can ask questions about
 buildings, locations, bookables, bookings, and user records.
+
+![Chat UI demo: asking about buildings and locations, the tool call it triggers, and the streamed answer](docs/demo.gif)
 
 ## Disclaimer
 
@@ -95,20 +97,20 @@ docker run --env-file .env -e BACKEND_API_URL=http://host.docker.internal:8000/a
 
 ### Deploying to Cloud Run (GCP)
 
-Both Dockerfiles build and run as-is with `gcloud run deploy`, e.g.:
+Deployment is handled by CI/CD, not manual `gcloud` commands. On every push to `main`,
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds and pushes the backend and
+frontend images to Artifact Registry, then runs `terraform apply` (`terraform/main.tf`) to roll
+out `fastapi-backend` and `streamlit-frontend` as two Cloud Run services. The frontend's
+`BACKEND_API_URL` is wired automatically from the backend service's live Cloud Run URL via
+Terraform - no manual step needed there.
 
-```bash
-gcloud run deploy flexopus-api --source . --dockerfile Dockerfile.api
-gcloud run deploy flexopus-ui --source . --dockerfile Dockerfile.streamlit
-```
-
-Each Cloud Run service gets its own URL, so after the API service is deployed, set
-`BACKEND_API_URL` on the UI service to the API's actual Cloud Run URL:
-
-```bash
-gcloud run services update flexopus-ui \
-  --set-env-vars BACKEND_API_URL=https://flexopus-api-<hash>.a.run.app/api
-```
+One-time setup (not automated, and shouldn't be - see `terraform/bootstrap/main.tf`'s comments for
+why the CI identity deliberately can't do this itself): apply `terraform/bootstrap/` manually with
+your own privileged GCP credentials to create the Artifact Registry repo, the
+`github-actions-deployer` service account, and its IAM grants, then set `GCP_PROJECT_ID`,
+`GCP_CREDENTIALS` (that service account's key), and `TF_STATE_BUCKET` as GitHub Actions secrets.
+See `terraform/README.md` for the full split between `main.tf` (CI-managed) and `bootstrap/`
+(manual, rare).
 
 ## Tooling
 

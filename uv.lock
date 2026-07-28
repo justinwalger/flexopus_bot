@@ -748,7 +748,7 @@ wheels = [
 ]
 
 [[package]]
-name = "flexopus-4-7"
+name = "flexopus"
 version = "0.1.0"
 source = { virtual = "." }
 
