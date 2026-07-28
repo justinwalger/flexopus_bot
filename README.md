@@ -6,6 +6,9 @@ buildings, locations, bookables, bookings, and user records.
 
 ![Chat UI demo: asking about buildings and locations, the tool call it triggers, and the streamed answer](docs/demo.gif)
 
+**Live demo:** [https://justinwalger.de/flexopus](https://justinwalger.de/flexopus)
+
+
 ## Disclaimer
 
 This is an **unofficial, non-commercial hobby project**, built for fun and to explore LLM agents
